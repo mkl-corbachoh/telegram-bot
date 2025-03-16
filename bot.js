@@ -34,11 +34,30 @@ app.use(bot.webhookCallback('/webhook')); // Usa webhooks en vez de pooling
 
 // Telegraf
 bot.start((ctx) => ctx.reply('¡Bienvenido! 🤖'));
-bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info'));
-
 bot.command('info', (ctx) => {
     ctx.reply(`Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`);
 });
+bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info'));
+
+bot.command('menu', (ctx) => {
+    ctx.reply('¿Qué te gustaría hacer?', {
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: 'Ver perfil', callback_data: 'profile' }],
+                [{ text: 'Ver ayuda', callback_data: 'help' }]
+            ]
+        }
+    });
+});
+
+bot.action('profile', (ctx) => {
+    ctx.reply(`Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`);
+});
+
+bot.action('help', (ctx) => {
+    ctx.reply('Comandos disponibles: /start, /help, /info')
+});
+
 
 bot.launch();
 console.log('Bot iniciado 🚀');
@@ -48,3 +67,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Bot escuchando en http://localhost:${PORT}`);
 });
+
