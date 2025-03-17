@@ -1,12 +1,12 @@
 const getWeather = require("./modules/weather");
 const express = require("express");
-require("dotenv").config();
+const config = require("./config/config");
 
 //const TelegramBot = require("node-telegram-bot-api");
 //const bot = new TelegramBot(TOKEN, { polling: false });
 
 const { Telegraf } = require('telegraf');
-const TOKEN = process.env.TELEGRAM_TOKEN;
+const TOKEN = config.botToken;
 const bot = new Telegraf(TOKEN);
 // Para que no use pooling  el bot de teleggram porque consume mas recursos
 bot.telegram.setWebhook('https://mikorh.ddns.net/webhook');
@@ -14,10 +14,10 @@ bot.telegram.setWebhook('https://mikorh.ddns.net/webhook');
 // ------ Iniciamos la base de datos ------ // 
 const mysql = require('mysql2');
 const connection = mysql.createConnection({
-    host: process.env.HOST_DB,
-    user: process.env.USER_DB,
-    password: process.env.PASS_DB,
-    database: process.env.TLBOT_DB
+    host: config.hostDb,
+    user: config.userDb,
+    password: config.passDb,
+    database: config.database
 });
 connection.connect(err => {
     if (err) {
@@ -70,7 +70,7 @@ bot.launch();
 console.log('Bot iniciado 🚀');
 
 // Escuchamos en el puerto 3000
-const PORT = process.env.PORT || 3000;
+const PORT = config.port || 3000;
 app.listen(PORT, () => {
     console.log(`Bot escuchando en http://localhost:${PORT}`);
 });
