@@ -1,5 +1,6 @@
-require("dotenv").config();
+const getWeather = require("./modules/weather");
 const express = require("express");
+require("dotenv").config();
 
 //const TelegramBot = require("node-telegram-bot-api");
 //const bot = new TelegramBot(TOKEN, { polling: false });
@@ -37,6 +38,12 @@ bot.start((ctx) => ctx.reply('¡Bienvenido! 🤖'));
 bot.command('info', (ctx) => {
     ctx.reply(`Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`);
 });
+
+bot.command("clima", async (ctx) => {
+    const msg = await getWeather("Santiago de Compostela");
+    ctx.reply(msg);
+});
+
 bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info'));
 
 bot.command('menu', (ctx) => {
