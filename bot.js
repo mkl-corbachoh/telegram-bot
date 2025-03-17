@@ -1,6 +1,6 @@
+const config = require("./config/config");
 const getWeather = require("./modules/weather");
 const express = require("express");
-const config = require("./config/config");
 
 //const TelegramBot = require("node-telegram-bot-api");
 //const bot = new TelegramBot(TOKEN, { polling: false });
