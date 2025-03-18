@@ -26,7 +26,7 @@ const connection = mysql.createConnection({
 connection.connect(err => {
     if (err) {
         console.error('Error conectando a la DB:', err);
-        return;
+        process.exit(1); // Detener la ejecución
     }
     console.log('Conectado a MariaDB ✅');
 });
@@ -80,14 +80,14 @@ bot.action('booking', (ctx) => {
         if (pdfs.length === 0) {
             return ctx.reply("No hay archivos PDF disponibles.");
         }
-    });
-    // Crear botones para cada reserva
-    const botones = pdfs.map(file => [{ text: file, callback_data: `download_${file}` }]);
-
-    ctx.reply("Selecciona una reserva para descargar:", {
-        reply_markup: {
-            inline_keyboard: botones
-        }
+        // Crear botones para cada reserva 
+        const buttons = pdfs.map(file => [{ text: file, callback_data: `download_${file}` }]);
+    
+        ctx.reply("Selecciona una reserva para descargar:", {
+            reply_markup: {
+                inline_keyboard: buttons
+            }
+        });
     });
 });
 
@@ -96,16 +96,26 @@ bot.action(/^download_(.+)$/, (ctx) => {
     const fileName = ctx.match[1];
     const filePath = path.join(config.reservasPath, fileName);
 
-    if (!fs.existsSync(filePath)) {
-        return ctx.reply("El archivo ya no está disponible.");
+    if (!fileName.endsWith(".pdf") || !fs.existsSync(filePath)) {
+        return ctx.reply("El archivo solicitado no es válido o ya no está disponible.");
     }
 
-    ctx.replyWithDocument({ source: filePath });
+    try {
+        ctx.replyWithDocument({ source: filePath });
+    } catch (error) {
+        console.error("Error al enviar el archivo:", error);
+        ctx.reply("Hubo un error al enviar el archivo.");
+    }
 });
 
 bot.action("weather", async (ctx) => {
-    const msg = await getWeather("Santiago de Compostela");
-    ctx.reply(msg);
+    try {
+        const msg = await getWeather("Santiago de Compostela");
+        ctx.reply(msg);
+    } catch (error) {
+        console.error("Error obteniendo el clima:", error);
+        ctx.reply("Hubo un error al obtener el clima.");
+    }
 });
 
 // Escucha de documentos
@@ -131,7 +141,7 @@ bot.on("document", async (ctx) => {
 
 
 // lanzamos el bot.
-bot.launch();
+// bot.launch(); //  No es necesario porque usamos webhooks
 console.log('Bot iniciado 🚀');
 
 // Escuchamos en el puerto 3000
