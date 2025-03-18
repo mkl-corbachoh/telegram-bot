@@ -44,16 +44,16 @@ bot.command('info', (ctx) => {
 });
 
 
-bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info'));
+bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info, /menu'));
 
 bot.command('menu', (ctx) => {
     ctx.reply('¿Qué te gustaría hacer?', {
         reply_markup: {
             inline_keyboard: [
                 [{ text: 'Ver perfil', callback_data: 'profile' }],
-                [{ text: 'Clima', callback_data: 'weather' }]
-                [{ text: 'Reservas', callback_data: 'booking' }]
-                [{ text: 'Ver ayuda', callback_data: 'help' }]
+                [{ text: 'Clima', callback_data: 'weather' }],
+                [{ text: 'Reservas', callback_data: 'booking' }],
+                [{ text: 'Ver ayuda', callback_data: 'help' }],
             ]
         }
     });
@@ -69,7 +69,7 @@ bot.action('help', (ctx) => {
 
 bot.action('booking', (ctx) => {
     // var reservasList = [];
-    fs.readdir(reservasDir, (err, files) => {
+    fs.readdir(config.reservasPath, (err, files) => {
         if (err) {
             console.error("Error al leer la carpeta:", err);
             return ctx.reply("Hubo un error al acceder a las reservas.");
@@ -94,7 +94,7 @@ bot.action('booking', (ctx) => {
 // Acción para descargar un PDF
 bot.action(/^download_(.+)$/, (ctx) => {
     const fileName = ctx.match[1];
-    const filePath = path.join(reservasDir, fileName);
+    const filePath = path.join(config.reservasPath, fileName);
 
     if (!fs.existsSync(filePath)) {
         return ctx.reply("El archivo ya no está disponible.");
