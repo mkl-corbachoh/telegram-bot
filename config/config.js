@@ -1,3 +1,4 @@
+const path = require("path");
 require("dotenv").config();
 
 module.exports = {
@@ -7,5 +8,6 @@ module.exports = {
   hostDb: process.env.HOST_DB,
   userDb: process.env.USER_DB,
   passDb: process.env.PASS_DB,
-  database: process.env.TLBOT_DB
+  database: process.env.TLBOT_DB,
+  reservasPath: path.join(__dirname, "../data/reservas"),
 };
