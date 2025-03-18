@@ -5,6 +5,7 @@ const express = require("express");
 
 // Modulos propios.
 const getWeather = require("./modules/weather");
+const { replyAndClose } = require("./utils/reply");
 
 //const TelegramBot = require("node-telegram-bot-api");
 //const bot = new TelegramBot(TOKEN, { polling: false });
@@ -59,36 +60,46 @@ bot.command('menu', (ctx) => {
     });
 });
 
-bot.action('profile', (ctx) => {
-    ctx.reply(`Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`);
-});
-
-bot.action('help', (ctx) => {
-    ctx.reply('Comandos disponibles: /start, /help, /info')
+bot.action('profile', (ctx) => replyAndClose(ctx, `Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`));
+bot.action('help', (ctx) => replyAndClose(ctx, "Comandos disponibles: /start, /help, /info"));
+bot.action('weather', async (ctx) => {
+    try {
+        const msg = await getWeather("Santiago de Compostela");
+        replyAndClose(ctx, msg);
+    } catch (error) {
+        console.error("Error obteniendo el clima:", error);
+        replyAndClose(ctx, "Hubo un error al obtener el clima.");
+    }
 });
 
 bot.action('booking', (ctx) => {
     // var reservasList = [];
-    fs.readdir(config.reservasPath, (err, files) => {
-        if (err) {
-            console.error("Error al leer la carpeta:", err);
-            return ctx.reply("Hubo un error al acceder a las reservas.");
-        }
-
-        const pdfs = files.filter(file => file.endsWith(".pdf"));
-
-        if (pdfs.length === 0) {
-            return ctx.reply("No hay archivos PDF disponibles.");
-        }
-        // Crear botones para cada reserva 
-        const buttons = pdfs.map(file => [{ text: file, callback_data: `download_${file}` }]);
-    
-        ctx.reply("Selecciona una reserva para descargar:", {
-            reply_markup: {
-                inline_keyboard: buttons
+    try{
+        fs.readdir(config.reservasPath, (err, files) => {
+            if (err) {
+                console.error("Error al leer la carpeta:", err);
+                return ctx.reply("Hubo un error al acceder a las reservas.");
             }
+            
+            const pdfs = files.filter(file => file.endsWith(".pdf"));
+            
+            if (pdfs.length === 0) {
+                return ctx.reply("No hay archivos PDF disponibles.");
+            }
+            // Crear botones para cada reserva 
+            const buttons = pdfs.map(file => [{ text: file, callback_data: `download_${file}` }]);
+            
+            ctx.reply("Selecciona una reserva para descargar:", {
+                reply_markup: {
+                    inline_keyboard: buttons
+                }
+            });
+            ctx.editMessageReplyMarkup(null); // Cierra el menú
         });
-    });
+    } catch (error) {
+        console.error("Error al obtener las reservas:", error);
+        ctx.reply("Hubo un error al obtener las reservas.");
+    }
 });
 
 // Acción para descargar un PDF
@@ -102,19 +113,10 @@ bot.action(/^download_(.+)$/, (ctx) => {
 
     try {
         ctx.replyWithDocument({ source: filePath });
+        ctx.editMessageReplyMarkup(null); // Cierra el menú
     } catch (error) {
         console.error("Error al enviar el archivo:", error);
         ctx.reply("Hubo un error al enviar el archivo.");
-    }
-});
-
-bot.action("weather", async (ctx) => {
-    try {
-        const msg = await getWeather("Santiago de Compostela");
-        ctx.reply(msg);
-    } catch (error) {
-        console.error("Error obteniendo el clima:", error);
-        ctx.reply("Hubo un error al obtener el clima.");
     }
 });
 
