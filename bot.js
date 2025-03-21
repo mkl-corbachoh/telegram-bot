@@ -6,6 +6,10 @@ const express = require("express");
 // Modulos propios.
 const getWeather = require("./modules/weather");
 const { replyAndClose } = require("./utils/reply");
+const { isUserAuthorized } = require("./utils/db");
+const { getStages, getStageDetails } = require("./modules/etapas");
+
+const authorizedUsers = new Set(); // Caché en memoria
 
 //const TelegramBot = require("node-telegram-bot-api");
 //const bot = new TelegramBot(TOKEN, { polling: false });
@@ -17,20 +21,20 @@ const bot = new Telegraf(TOKEN);
 bot.telegram.setWebhook('https://mikorh.ddns.net/webhook');
 
 // ------ Iniciamos la base de datos ------ // 
-const mysql = require('mysql2');
-const connection = mysql.createConnection({
-    host: config.hostDb,
-    user: config.userDb,
-    password: config.passDb,
-    database: config.database
-});
-connection.connect(err => {
-    if (err) {
-        console.error('Error conectando a la DB:', err);
-        process.exit(1); // Detener la ejecución
-    }
-    console.log('Conectado a MariaDB ✅');
-});
+// const mysql = require('mysql2');
+// const connection = mysql.createConnection({
+//     host: config.hostDb,
+//     user: config.userDb,
+//     password: config.passDb,
+//     database: config.database
+// });
+// connection.connect(err => {
+//     if (err) {
+//         console.error('Error conectando a la DB:', err);
+//         process.exit(1); // Detener la ejecución
+//     }
+//     console.log('Conectado a MariaDB ✅');
+// });
 // ------------------------------------ //
 
 // Endpoint del bot
@@ -39,6 +43,25 @@ app.use(express.json());
 app.use(bot.webhookCallback('/webhook')); // Usa webhooks en vez de pooling
 
 // Telegraf
+bot.use(async (ctx,next) => {
+    // Si el mensaje NO es un comando, dejarlo pasar sin verificar permisos
+    if (!ctx.message || !ctx.message.text || !ctx.message.text.startsWith("/")) {
+        return next();
+    }
+
+    const userId = ctx.from.id;
+    const isAuthorized = await isUserAuthorized(userId);
+
+    if (authorizedUsers.has(userId)) {
+        return next(); // Si el usuario ya está en caché, no consultamos la DB
+    }
+
+    if (!isAuthorized) {
+        return ctx.reply("❌ No tienes permiso para usar este bot.");
+    }
+
+    return next(); // Si está autorizado, continúa con el siguiente middleware
+});
 bot.start((ctx) => ctx.reply('¡Bienvenido! 🤖'));
 bot.command('info', (ctx) => {
     ctx.reply(`Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`);
@@ -141,6 +164,41 @@ bot.on("document", async (ctx) => {
     */
 });
 
+// Comando para listar las etapas
+bot.command("stages", async (ctx) => {
+    const stages = await getStages();
+
+    if (stages.length === 0) {
+        return ctx.reply("No hay etapas registradas.");
+    }
+
+    // Crear botones para cada etapa
+    const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
+
+    ctx.reply("Selecciona una etapa para ver más información:", {
+        reply_markup: { inline_keyboard: buttons }
+    });
+});
+// Acción al seleccionar una etapa
+bot.action(/^stage_(\d+)$/, async (ctx) => {
+    const id = ctx.match[1];
+    const stage = await getStageDetails(id);
+
+    if (!stage) {
+        return ctx.reply("❌ No se encontró la información de esta etapa.");
+    }
+
+    let msg = `📍 *${stage.name}*\n`;
+    msg += `📏 *Distancia:* ${stage.distance_km} km\n`;
+    msg += `⏳ *Duración estimada:* ${stage.hours_duration} horas\n`;
+    msg += `📝 *Descripción:* ${stage.description}\n`;
+
+    if (stage.enlace_maps) {
+        msg += `🗺 [Ver ruta en Google Maps](${stage.maps_link})`;
+    }
+
+    ctx.replyWithMarkdown(msg);
+});
 
 // lanzamos el bot.
 // bot.launch(); //  No es necesario porque usamos webhooks

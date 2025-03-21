@@ -5,9 +5,11 @@ module.exports = {
   port: process.env.PORT,
   botToken: process.env.TELEGRAM_TOKEN,
   weatherApiKey: process.env.WEATHER_API_KEY,
-  hostDb: process.env.HOST_DB,
-  userDb: process.env.USER_DB,
-  passDb: process.env.PASS_DB,
-  database: process.env.TLBOT_DB,
+  dbConfig: {
+    host: process.env.HOST_DB,
+    user: process.env.USER_DB,
+    password: process.env.PASS_DB,
+    database: process.env.TLBOT_DB,
+  },
   reservasPath: path.join(__dirname, "../data/reservas"),
 };
