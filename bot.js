@@ -81,7 +81,7 @@ bot.action('booking', (ctx) => {
     // var reservasList = [];
     try{
 
-        const bookings=  getBookingList();
+        const bookings = await getBookingList();
 
         if (bookings.length === 0) {
             return ctx.reply(messages.noBookings);

@@ -1,5 +1,3 @@
-const { getStageDetails } = require("../modules/stages");
-
 module.exports = {
     bookingNotFound: "❌ No se encontró la información de esta reserva.",
     noBookings: "No hay reservas registradas.",

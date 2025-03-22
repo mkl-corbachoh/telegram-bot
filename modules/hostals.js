@@ -6,7 +6,7 @@ const pool = mysql.createPool(config.dbConfig);
 async function getBookingList() {
     const [rows] = await pool.query(`
             SELECT * 
-            FROM booking
+            FROM hostel
             ORDER BY check_in ASC
         `);
     return rows;
@@ -16,7 +16,7 @@ async function getBookingDetails(bookingId) {
     // Consultar los detalles de la reserva
     const [rows] = await pool.query(`
             SELECT * 
-            FROM booking
+            FROM hostel
             WHERE id = ?
         `, [bookingId]);
     return rows.length > 0 ? rows[0] : null;;
