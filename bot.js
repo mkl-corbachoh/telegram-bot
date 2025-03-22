@@ -8,7 +8,7 @@ const getWeather = require("./modules/weather");        // Modulo para obtener e
 const { replyAndClose } = require("./utils/reply");     // Modulo para responder y cerrar el menú
 const { isUserAuthorized } = require("./utils/db");     // Modulo para verificar si el usuario está autorizado
 const { getStages, getStageDetails } = require("./modules/stages"); // Modulo para obtener las etapas   
-const { getBookingList, getBookingDetails } = require("./modules/hostals"); // Modulo para obtener las reservas
+const { getBookingList, getBookingDetails } = require("./modules/hostels"); // Modulo para obtener las reservas
 const messages = require("./utils/messages");           // Modulo para los mensajes de error/éxito
 
 const authorizedUsers = new Set(); // Caché en memoria
@@ -77,10 +77,9 @@ bot.action('weather', async (ctx) => {
     }
 });
 
-bot.action('booking', (ctx) => {
+bot.action('booking', async (ctx) => {
     // var reservasList = [];
     try{
-
         const bookings = await getBookingList();
 
         if (bookings.length === 0) {
