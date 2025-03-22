@@ -1,41 +1,23 @@
 const config = require("./config/config");
-const fs = require("fs");
+const fs = require("fs").promises;
 const path = require("path");
 const express = require("express");
 
 // Modulos propios.
-const getWeather = require("./modules/weather");
-const { replyAndClose } = require("./utils/reply");
-const { isUserAuthorized } = require("./utils/db");
-const { getStages, getStageDetails } = require("./modules/etapas");
+const getWeather = require("./modules/weather");        // Modulo para obtener el clima
+const { replyAndClose } = require("./utils/reply");     // Modulo para responder y cerrar el menú
+const { isUserAuthorized } = require("./utils/db");     // Modulo para verificar si el usuario está autorizado
+const { getStages, getStageDetails } = require("./modules/stages"); // Modulo para obtener las etapas   
+const { getBookingList, getBookingDetails } = require("./modules/hostals"); // Modulo para obtener las reservas
+const messages = require("./utils/messages");           // Modulo para los mensajes de error/éxito
 
 const authorizedUsers = new Set(); // Caché en memoria
-
-//const TelegramBot = require("node-telegram-bot-api");
-//const bot = new TelegramBot(TOKEN, { polling: false });
 
 const { Telegraf } = require('telegraf');
 const TOKEN = config.botToken;
 const bot = new Telegraf(TOKEN);
 // Para que no use pooling  el bot de teleggram porque consume mas recursos
 bot.telegram.setWebhook('https://mikorh.ddns.net/webhook');
-
-// ------ Iniciamos la base de datos ------ // 
-// const mysql = require('mysql2');
-// const connection = mysql.createConnection({
-//     host: config.hostDb,
-//     user: config.userDb,
-//     password: config.passDb,
-//     database: config.database
-// });
-// connection.connect(err => {
-//     if (err) {
-//         console.error('Error conectando a la DB:', err);
-//         process.exit(1); // Detener la ejecución
-//     }
-//     console.log('Conectado a MariaDB ✅');
-// });
-// ------------------------------------ //
 
 // Endpoint del bot
 const app = express();
@@ -91,37 +73,67 @@ bot.action('weather', async (ctx) => {
         replyAndClose(ctx, msg);
     } catch (error) {
         console.error("Error obteniendo el clima:", error);
-        replyAndClose(ctx, "Hubo un error al obtener el clima.");
+        ctx.reply(ctx, "Hubo un error al obtener el clima.");
     }
 });
 
 bot.action('booking', (ctx) => {
     // var reservasList = [];
     try{
-        fs.readdir(config.reservasPath, (err, files) => {
-            if (err) {
-                console.error("Error al leer la carpeta:", err);
-                return ctx.reply("Hubo un error al acceder a las reservas.");
-            }
-            
-            const pdfs = files.filter(file => file.endsWith(".pdf"));
-            
-            if (pdfs.length === 0) {
-                return ctx.reply("No hay archivos PDF disponibles.");
-            }
-            // Crear botones para cada reserva 
-            const buttons = pdfs.map(file => [{ text: file, callback_data: `download_${file}` }]);
-            
-            ctx.reply("Selecciona una reserva para descargar:", {
-                reply_markup: {
-                    inline_keyboard: buttons
-                }
-            });
-            ctx.editMessageReplyMarkup(null); // Cierra el menú
+
+        const bookings=  getBookingList();
+
+        if (bookings.length === 0) {
+            return ctx.reply(messages.noBookings);
+        }
+
+        // Crear botones para cada reserva
+        const buttons = bookings.map(booking => [
+            { text: `${booking.hostel_name} (${booking.check_in} - ${booking.check_out})`, callback_data: `booking_${booking.id}` }
+        ]);
+        buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
+
+        replyAndClose("Selecciona una reserva para ver más información:", {
+            reply_markup: { inline_keyboard: buttons }
         });
+
     } catch (error) {
         console.error("Error al obtener las reservas:", error);
-        ctx.reply("Hubo un error al obtener las reservas.");
+        ctx.reply("hubo un error al obtener las reservas.");
+    }
+});
+
+// Acción para mostrar detalles de una reserva
+bot.action(/^booking_(\d+)$/, async (ctx) => {
+    const bookingId = ctx.match[1];
+
+    try {
+        // Consultar los detalles de la reserva
+        const booking = await getBookingDetails(bookingId);
+
+        if (!booking) {
+            return ctx.reply(messages.bookingNotFound);
+        }
+
+        // Formatear el mensaje con los detalles de la reserva
+        let msg = `🏨 *${booking.hostel_name}*\n\n`;
+        msg += `📅 *Check-in:* ${booking.check_in}\n`;
+        msg += `📅 *Check-out:* ${booking.check_out}\n`;
+        msg += `📍 *Dirección:* ${booking.address || "No disponible"}\n`;
+        msg += `📞 *Teléfono:* ${booking.phone || "No disponible"}\n`;
+        msg += `📧 *Email:* ${booking.email || "No disponible"}\n`;
+        msg += `📝 *Notas:* ${booking.notes || "Sin notas"}\n\n`;
+
+        if (booking.pdf_path) {
+            const bookingPdf = `./reservas/${booking.pdf_path}`;
+            msg += `📄 *Reserva PDF:* [Descargar archivo](${bookingPdf})\n`;
+        }
+
+        ctx.replyWithMarkdown(msg);
+        ctx.editMessageReplyMarkup(null); // Cierra el menú
+    } catch (error) {
+        console.error("Error al obtener los detalles de la reserva:", error);
+        ctx.reply(messages.bookingDetailsError);
     }
 });
 
@@ -131,7 +143,7 @@ bot.action(/^download_(.+)$/, (ctx) => {
     const filePath = path.join(config.reservasPath, fileName);
 
     if (!fileName.endsWith(".pdf") || !fs.existsSync(filePath)) {
-        return ctx.reply("El archivo solicitado no es válido o ya no está disponible.");
+        return ctx.reply(messages.invalidFile);
     }
 
     try {
@@ -145,7 +157,7 @@ bot.action(/^download_(.+)$/, (ctx) => {
 
 // Escucha de documentos
 bot.on("document", async (ctx) => {
-    ctx.reply("En estosmomentos no puedo procesar documentos. Disculpa las molestias.");
+    ctx.reply("En estos momentos no puedo procesar documentos. Disculpa las molestias.");
     /*
     const fileId = ctx.message.document.file_id;
     const file = await ctx.telegram.getFile(fileId);
@@ -169,36 +181,53 @@ bot.command("stages", async (ctx) => {
     const stages = await getStages();
 
     if (stages.length === 0) {
-        return ctx.reply("No hay etapas registradas.");
+        return ctx.reply(messages.noStages);
     }
 
     // Crear botones para cada etapa
     const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
-
-    ctx.reply("Selecciona una etapa para ver más información:", {
+    buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
+    
+    replyAndClose("Selecciona una etapa para ver más información:", {
         reply_markup: { inline_keyboard: buttons }
     });
 });
+
 // Acción al seleccionar una etapa
 bot.action(/^stage_(\d+)$/, async (ctx) => {
     const id = ctx.match[1];
     const stage = await getStageDetails(id);
 
     if (!stage) {
-        return ctx.reply("❌ No se encontró la información de esta etapa.");
+        return ctx.reply(messages.stageNotFound);
     }
 
-    let msg = `📍 *${stage.name}*\n`;
-    msg += `📏 *Distancia:* ${stage.distance_km} km\n`;
-    msg += `⏳ *Duración estimada:* ${stage.hours_duration} horas\n`;
-    msg += `📝 *Descripción:* ${stage.description}\n`;
-
+    // let msg = `📍 *${stage.name}*\n\n`;
+    // msg += `📏 *Distancia:* ${stage.distance_km} km\n\n`;
+    // msg += `⏳ *Duración estimada:* ${stage.hours_duration} horas\n\n`;
+    // msg += `📝 *Descripción:* ${stage.description}\n\n`;
+    let msg = `📍 *${stage.name}*\n\n`;
+    msg += `\`\`\`
+    ┌───────────────────────────────┐
+    │         Información           │
+    ├───────────────────────────────┤
+    │ 📏 Distancia: ${stage.distance_km} km       │
+    │ ⏳ Duración: ${stage.hours_duration} horas │
+    ├───────────────────────────────┤
+    │ 📝 Descripción:               │
+    │ ${stage.description}          │
+    └───────────────────────────────┘
+    \`\`\`\n`;
+    
     if (stage.enlace_maps) {
-        msg += `🗺 [Ver ruta en Google Maps](${stage.maps_link})`;
+        msg += `🗺 *Ruta en Google Maps:*\n[Haz clic aquí para ver la ruta](${stage.maps_link})`;
     }
 
     ctx.replyWithMarkdown(msg);
+    ctx.editMessageReplyMarkup(null); // Cierra el menú
 });
+
+bot.action("close", (ctx) => ctx.editMessageReplyMarkup(null)); // Cierra el menú con el botón.
 
 // lanzamos el bot.
 // bot.launch(); //  No es necesario porque usamos webhooks
