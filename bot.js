@@ -1,3 +1,5 @@
+const { format } = require("date-fns");
+const { es } = require("date-fns/locale");
 const config = require("./config/config");
 const fs = require("fs").promises;
 const path = require("path");
@@ -7,7 +9,7 @@ const express = require("express");
 const getWeather = require("./modules/weather");        // Modulo para obtener el clima
 const { replyAndClose } = require("./utils/reply");     // Modulo para responder y cerrar el menú
 const { isUserAuthorized } = require("./utils/db");     // Modulo para verificar si el usuario está autorizado
-const { getStages, getStageDetails } = require("./modules/stages"); // Modulo para obtener las etapas   
+const { getStagesTravel, getStagesRute, getStageDetails } = require("./modules/stages"); // Modulo para obtener las etapas   
 const { getBookingList, getBookingDetails } = require("./modules/hostels"); // Modulo para obtener las reservas
 const messages = require("./utils/messages");           // Modulo para los mensajes de error/éxito
 
@@ -81,18 +83,26 @@ bot.action('booking', async (ctx) => {
     // var reservasList = [];
     try{
         const bookings = await getBookingList();
+        // console.log(bookings);
 
         if (bookings.length === 0) {
             return ctx.reply(messages.noBookings);
         }
-
         // Crear botones para cada reserva
-        const buttons = bookings.map(bookings => [
-            { text: `${bookings.hostel_name} (${bookings.check_in} - ${bookings.check_out})`, callback_data: `booking_${bookings.id}` }
-        ]);
+        // const buttons = bookings.map(booking => [
+        //     { text: `${booking.hostel_name} (${booking.check_in} - ${booking.check_out})`, callback_data: `booking_${booking.id}` }
+        // ]);
+        const buttons = bookings.map(booking => {
+            const checkIn = format(new Date(booking.check_in), "dd 'de' MMMM", { locale: es });
+            const checkOut = format(new Date(booking.check_out), "dd 'de' MMMM", { locale: es });
+            return [
+                { text: `${booking.hostel_name} (${checkIn} - ${checkOut})`, callback_data: `booking_${booking.id}` }
+            ];
+        });
         buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
+        // console.log(buttons);
 
-        replyAndClose(ctx, "Selecciona una reserva para ver más información:", {
+        ctx.reply("Selecciona una reserva para ver más información:", {
             reply_markup: { inline_keyboard: buttons }
         });
 
@@ -177,7 +187,21 @@ bot.on("document", async (ctx) => {
 
 // Comando para listar las etapas
 bot.command("stages", async (ctx) => {
-    const stages = await getStages();
+
+    const buttons = [
+        [{ text: "Ruta del Camino", callback_data: "stages_rute" }],
+        [{ text: "Resto de dias", callback_data: "stages_travel" }],
+        [{ text: "Cerrar menú", callback_data: "close" }]
+    ];
+    
+    ctx.reply("Selecciona una etapa para ver más información:", {
+        reply_markup: { inline_keyboard: buttons }
+    });
+});
+
+// Action para listar las etapas del camino
+bot.action("stages_rute", async (ctx) => {
+    const stages = await getStagesRute();
 
     if (stages.length === 0) {
         return ctx.reply(messages.noStages);
@@ -187,7 +211,23 @@ bot.command("stages", async (ctx) => {
     const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
     buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
     
-    replyAndClose(ctx, "Selecciona una etapa para ver más información:", {
+    ctx.reply("Selecciona una etapa para ver más información:", {
+        reply_markup: { inline_keyboard: buttons }
+    });
+});
+
+bot.action("stages_travel", async (ctx) => {
+    const stages = await getStagesTravel();
+
+    if (stages.length === 0) {
+        return ctx.reply(messages.noStages);
+    }
+
+    // Crear botones para cada etapa
+    const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
+    buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
+    
+    ctx.reply("Selecciona una etapa para ver más información:", {
         reply_markup: { inline_keyboard: buttons }
     });
 });
@@ -201,22 +241,10 @@ bot.action(/^stage_(\d+)$/, async (ctx) => {
         return ctx.reply(messages.stageNotFound);
     }
 
-    // let msg = `📍 *${stage.name}*\n\n`;
-    // msg += `📏 *Distancia:* ${stage.distance_km} km\n\n`;
-    // msg += `⏳ *Duración estimada:* ${stage.hours_duration} horas\n\n`;
-    // msg += `📝 *Descripción:* ${stage.description}\n\n`;
     let msg = `📍 *${stage.name}*\n\n`;
-    msg += `\`\`\`
-    ┌───────────────────────────────┐
-    │         Información           │
-    ├───────────────────────────────┤
-    │ 📏 Distancia: ${stage.distance_km} km       │
-    │ ⏳ Duración: ${stage.hours_duration} horas │
-    ├───────────────────────────────┤
-    │ 📝 Descripción:               │
-    │ ${stage.description}          │
-    └───────────────────────────────┘
-    \`\`\`\n`;
+    msg += `📏 *Distancia:* ${stage.distance_km} km\n\n`;
+    msg += `⏳ *Duración estimada:* ${stage.hours_duration} horas\n\n`;
+    msg += `📝 *Descripción:* ${stage.description}\n\n`;
     
     if (stage.enlace_maps) {
         msg += `🗺 *Ruta en Google Maps:*\n[Haz clic aquí para ver la ruta](${stage.maps_link})`;

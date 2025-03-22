@@ -3,8 +3,13 @@ const config = require("../config/config");
 
 const pool = mysql.createPool(config.dbConfig);
 
-async function getStages() {
-    const [rows] = await pool.query("SELECT id, name FROM stages ORDER BY id ASC");
+async function getStagesRute() {
+    const [rows] = await pool.query("SELECT id, name FROM stages WHERE type = 1 ORDER BY n_order,id ASC");
+    return rows;
+}
+
+async function getStagesTravel() {
+    const [rows] = await pool.query("SELECT id, name FROM stages WHERE type = 0 ORDER BY n_order,id ASC");
     return rows;
 }
 
@@ -13,4 +18,4 @@ async function getStageDetails(id) {
     return rows.length > 0 ? rows[0] : null;
 }
 
-module.exports = { getStages, getStageDetails };
+module.exports = { getStagesRute, getStagesTravel, getStageDetails };
