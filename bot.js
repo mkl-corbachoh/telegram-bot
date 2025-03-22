@@ -92,7 +92,7 @@ bot.action('booking', async (ctx) => {
         ]);
         buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
 
-        replyAndClose("Selecciona una reserva para ver más información:", {
+        replyAndClose(ctx, "Selecciona una reserva para ver más información:", {
             reply_markup: { inline_keyboard: buttons }
         });
 
@@ -187,7 +187,7 @@ bot.command("stages", async (ctx) => {
     const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
     buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
     
-    replyAndClose("Selecciona una etapa para ver más información:", {
+    replyAndClose(ctx, "Selecciona una etapa para ver más información:", {
         reply_markup: { inline_keyboard: buttons }
     });
 });
