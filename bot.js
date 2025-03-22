@@ -87,8 +87,8 @@ bot.action('booking', async (ctx) => {
         }
 
         // Crear botones para cada reserva
-        const buttons = bookings.map(booking => [
-            { text: `${booking.hostel_name} (${booking.check_in} - ${booking.check_out})`, callback_data: `booking_${booking.id}` }
+        const buttons = bookings.map(bookings => [
+            { text: `${bookings.hostel_name} (${bookings.check_in} - ${bookings.check_out})`, callback_data: `booking_${bookings.id}` }
         ]);
         buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
 
