@@ -71,7 +71,10 @@ bot.command('menu', (ctx) => {
     // });
 });
 
-bot.action('menu', (ctx) => {ctx.reply('¿Qué te gustaría hacer?', menu.print_menu)});
+bot.action('menu', (ctx) => {
+    ctx.editMessageReplyMarkup(null);
+    ctx.reply('¿Qué te gustaría hacer?', menu.print_menu)}
+);
 bot.action("close", (ctx) => ctx.editMessageReplyMarkup(null)); // Cierra el menú con el botón.
 bot.action('profile', (ctx) => replyAndClose(ctx, `Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`));
 bot.action('help', (ctx) => replyAndClose(ctx, "Comandos disponibles: /start, /help, /info, /menu"));
@@ -90,10 +93,11 @@ bot.action('booking', async (ctx) => {
     try{
         const bookings = await getBookingList();
         // console.log(bookings);
-
+        
         if (bookings.length === 0) {
             return ctx.reply(messages.noBookings, menu.back_menu);
         }
+        ctx.editMessageReplyMarkup(null);
         // Crear botones para cada reserva
         // const buttons = bookings.map(booking => [
         //     { text: `${booking.hostel_name} (${booking.check_in} - ${booking.check_out})`, callback_data: `booking_${booking.id}` }
@@ -126,10 +130,11 @@ bot.action(/^booking_(\d+)$/, async (ctx) => {
     try {
         // Consultar los detalles de la reserva
         const booking = await getBookingDetails(bookingId);
-
+        
         if (!booking) {
             return ctx.reply(messages.bookingNotFound, menu.back_menu);
         }
+        ctx.editMessageReplyMarkup(null);
 
         // Formatear el mensaje con los detalles de la reserva
         let msg = `🏨 *${booking.hostel_name}*\n\n`;
@@ -194,7 +199,7 @@ bot.on("document", async (ctx) => {
 
 // Comando para listar las etapas
 bot.action("stages", async (ctx) => {
-
+    ctx.editMessageReplyMarkup(null);
     const buttons = [
         [{ text: "Ruta del Camino", callback_data: "stages_rute" }],
         [{ text: "Resto de dias", callback_data: "stages_travel" }],
@@ -214,7 +219,7 @@ bot.action("stages_rute", async (ctx) => {
     if (stages.length === 0) {
         return ctx.reply(messages.noStages, menu.back_menu);
     }
-
+    ctx.editMessageReplyMarkup(null);
     // Crear botones para cada etapa
     const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
     buttons.push([{ text: 'Volver al menú principal', callback_data: 'menu' }]);
@@ -231,7 +236,7 @@ bot.action("stages_travel", async (ctx) => {
     if (stages.length === 0) {
         return ctx.reply(messages.noStages, menu.back_menu);
     }
-
+    ctx.editMessageReplyMarkup(null);
     // Crear botones para cada etapa
     const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
     buttons.push([{ text: 'Volver al menú principal', callback_data: 'menu' }]);
