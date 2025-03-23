@@ -11,7 +11,9 @@ const { replyAndClose } = require("./utils/reply");     // Modulo para responder
 const { isUserAuthorized } = require("./utils/db");     // Modulo para verificar si el usuario está autorizado
 const { getStagesTravel, getStagesRute, getStageDetails } = require("./modules/stages"); // Modulo para obtener las etapas   
 const { getBookingList, getBookingDetails } = require("./modules/hostels"); // Modulo para obtener las reservas
+
 const messages = require("./utils/messages");           // Modulo para los mensajes de error/éxito
+const menu = require("./utils/menu_buttons");           // Modulo para los mensajes de error/éxito
 
 const authorizedUsers = new Set(); // Caché en memoria
 
@@ -46,29 +48,33 @@ bot.use(async (ctx,next) => {
 
     return next(); // Si está autorizado, continúa con el siguiente middleware
 });
-bot.start((ctx) => ctx.reply('¡Bienvenido! 🤖'));
+bot.start((ctx) => ctx.reply('¡Bienvenido! 🤖',menu.print_menu));
+
 bot.command('info', (ctx) => {
     ctx.reply(`Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`);
 });
 
-
 bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info, /menu'));
 
 bot.command('menu', (ctx) => {
-    ctx.reply('¿Qué te gustaría hacer?', {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: 'Ver perfil', callback_data: 'profile' }],
-                [{ text: 'Clima', callback_data: 'weather' }],
-                [{ text: 'Reservas', callback_data: 'booking' }],
-                [{ text: 'Ver ayuda', callback_data: 'help' }],
-            ]
-        }
-    });
+    ctx.reply('¿Qué te gustaría hacer?', menu.print_menu);
+    
+    // ctx.reply('¿Qué te gustaría hacer?', {
+    //     reply_markup: {
+        //         inline_keyboard: [
+    //             [{ text: 'Ver perfil', callback_data: 'profile' }],
+    //             [{ text: 'Clima', callback_data: 'weather' }],
+    //             [{ text: 'Reservas', callback_data: 'booking' }],
+    //             [{ text: 'Ver ayuda', callback_data: 'help' }],
+    //         ]
+    //     }
+    // });
 });
 
+bot.action('menu', (ctx) => {ctx.reply('¿Qué te gustaría hacer?', menu.print_menu)});
+bot.action("close", (ctx) => ctx.editMessageReplyMarkup(null)); // Cierra el menú con el botón.
 bot.action('profile', (ctx) => replyAndClose(ctx, `Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`));
-bot.action('help', (ctx) => replyAndClose(ctx, "Comandos disponibles: /start, /help, /info"));
+bot.action('help', (ctx) => replyAndClose(ctx, "Comandos disponibles: /start, /help, /info, /menu"));
 bot.action('weather', async (ctx) => {
     try {
         const msg = await getWeather("Santiago de Compostela");
@@ -86,7 +92,7 @@ bot.action('booking', async (ctx) => {
         // console.log(bookings);
 
         if (bookings.length === 0) {
-            return ctx.reply(messages.noBookings);
+            return ctx.reply(messages.noBookings, menu.back_menu);
         }
         // Crear botones para cada reserva
         // const buttons = bookings.map(booking => [
@@ -100,6 +106,7 @@ bot.action('booking', async (ctx) => {
             ];
         });
         buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
+        buttons.push([{ text: 'Volver al menú principal', callback_data: 'menu' }]);
         // console.log(buttons);
 
         ctx.reply("Selecciona una reserva para ver más información:", {
@@ -121,7 +128,7 @@ bot.action(/^booking_(\d+)$/, async (ctx) => {
         const booking = await getBookingDetails(bookingId);
 
         if (!booking) {
-            return ctx.reply(messages.bookingNotFound);
+            return ctx.reply(messages.bookingNotFound, menu.back_menu);
         }
 
         // Formatear el mensaje con los detalles de la reserva
@@ -152,7 +159,7 @@ bot.action(/^download_(.+)$/, (ctx) => {
     const filePath = path.join(config.reservasPath, fileName);
 
     if (!fileName.endsWith(".pdf") || !fs.existsSync(filePath)) {
-        return ctx.reply(messages.invalidFile);
+        return ctx.reply(messages.invalidFile, menu.back_menu);
     }
 
     try {
@@ -186,11 +193,12 @@ bot.on("document", async (ctx) => {
 });
 
 // Comando para listar las etapas
-bot.command("stages", async (ctx) => {
+bot.action("stages", async (ctx) => {
 
     const buttons = [
         [{ text: "Ruta del Camino", callback_data: "stages_rute" }],
         [{ text: "Resto de dias", callback_data: "stages_travel" }],
+        [{ text: 'Volver al menú principal', callback_data: 'menu' }],
         [{ text: "Cerrar menú", callback_data: "close" }]
     ];
     
@@ -204,11 +212,12 @@ bot.action("stages_rute", async (ctx) => {
     const stages = await getStagesRute();
 
     if (stages.length === 0) {
-        return ctx.reply(messages.noStages);
+        return ctx.reply(messages.noStages, menu.back_menu);
     }
 
     // Crear botones para cada etapa
     const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
+    buttons.push([{ text: 'Volver al menú principal', callback_data: 'menu' }]);
     buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
     
     ctx.reply("Selecciona una etapa para ver más información:", {
@@ -220,11 +229,12 @@ bot.action("stages_travel", async (ctx) => {
     const stages = await getStagesTravel();
 
     if (stages.length === 0) {
-        return ctx.reply(messages.noStages);
+        return ctx.reply(messages.noStages, menu.back_menu);
     }
 
     // Crear botones para cada etapa
     const buttons = stages.map(stage => [{ text: stage.name, callback_data: `stage_${stage.id}` }]);
+    buttons.push([{ text: 'Volver al menú principal', callback_data: 'menu' }]);
     buttons.push([{ text: "Cerrar menú", callback_data: "close" }]);
     
     ctx.reply("Selecciona una etapa para ver más información:", {
@@ -238,7 +248,7 @@ bot.action(/^stage_(\d+)$/, async (ctx) => {
     const stage = await getStageDetails(id);
 
     if (!stage) {
-        return ctx.reply(messages.stageNotFound);
+        return ctx.reply(messages.stageNotFound, menu.back_menu);
     }
 
     let msg = `📍 *${stage.name}*\n\n`;
@@ -254,7 +264,6 @@ bot.action(/^stage_(\d+)$/, async (ctx) => {
     ctx.editMessageReplyMarkup(null); // Cierra el menú
 });
 
-bot.action("close", (ctx) => ctx.editMessageReplyMarkup(null)); // Cierra el menú con el botón.
 
 // lanzamos el bot.
 // bot.launch(); //  No es necesario porque usamos webhooks
