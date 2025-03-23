@@ -6,7 +6,7 @@ const path = require("path");
 const express = require("express");
 
 // Modulos propios.
-const getWeather = require("./modules/weather");        // Modulo para obtener el clima
+const {getWeather, getWeatherByCoordinates} = require("./modules/weather");        // Modulo para obtener el clima
 const { replyAndClose } = require("./utils/reply");     // Modulo para responder y cerrar el menú
 const { isUserAuthorized } = require("./utils/db");     // Modulo para verificar si el usuario está autorizado
 const { getStagesTravel, getStagesRute, getStageDetails } = require("./modules/stages"); // Modulo para obtener las etapas   
@@ -58,17 +58,6 @@ bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info, /menu')
 
 bot.command('menu', (ctx) => {
     ctx.reply('¿Qué te gustaría hacer?', menu.print_menu);
-    
-    // ctx.reply('¿Qué te gustaría hacer?', {
-    //     reply_markup: {
-        //         inline_keyboard: [
-    //             [{ text: 'Ver perfil', callback_data: 'profile' }],
-    //             [{ text: 'Clima', callback_data: 'weather' }],
-    //             [{ text: 'Reservas', callback_data: 'booking' }],
-    //             [{ text: 'Ver ayuda', callback_data: 'help' }],
-    //         ]
-    //     }
-    // });
 });
 
 bot.action('menu', (ctx) => {
@@ -79,12 +68,36 @@ bot.action("close", (ctx) => ctx.editMessageReplyMarkup(null)); // Cierra el men
 bot.action('profile', (ctx) => replyAndClose(ctx, `Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`));
 bot.action('help', (ctx) => replyAndClose(ctx, "Comandos disponibles: /start, /help, /info, /menu"));
 bot.action('weather', async (ctx) => {
+    ctx.reply('Por favor, comparte tu ubicación para obtener el clima actual:', {
+        reply_markup: {
+            keyboard: [
+                [{ text: '📍 Enviar mi ubicación', request_location: true }]
+            ],
+            resize_keyboard: true,
+            one_time_keyboard: true
+        }
+    });
+    // try {
+    //     const msg = await getWeather("Santiago de Compostela");
+    //     replyAndClose(ctx, msg);
+    // } catch (error) {
+    //     console.error("Error obteniendo el clima:", error);
+    //     ctx.reply(ctx, "Hubo un error al obtener el clima.");
+    // }
+});
+
+bot.on('location', async (ctx) => {
+    const { latitude, longitude } = ctx.message.location;
+
     try {
-        const msg = await getWeather("Santiago de Compostela");
-        replyAndClose(ctx, msg);
+        // Llama a la API de clima con las coordenadas
+        const weather = await getWeatherByCoordinates(latitude, longitude);
+
+        // Responde con el clima
+        ctx.reply(`🌤 El clima en tu ubicación actual es:\n\n${weather}`);
     } catch (error) {
-        console.error("Error obteniendo el clima:", error);
-        ctx.reply(ctx, "Hubo un error al obtener el clima.");
+        console.error('Error al obtener el clima:', error);
+        ctx.reply('❌ Hubo un error al obtener el clima. Por favor, inténtalo de nuevo más tarde.');
     }
 });
 
