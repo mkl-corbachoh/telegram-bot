@@ -73,8 +73,8 @@ bot.command('menu', (ctx) => {
 
 bot.action('menu', (ctx) => {
     ctx.editMessageReplyMarkup(null);
-    ctx.reply('¿Qué te gustaría hacer?', menu.print_menu)}
-);
+    ctx.reply('¿Qué te gustaría hacer?', menu.print_menu);
+});
 bot.action("close", (ctx) => ctx.editMessageReplyMarkup(null)); // Cierra el menú con el botón.
 bot.action('profile', (ctx) => replyAndClose(ctx, `Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`));
 bot.action('help', (ctx) => replyAndClose(ctx, "Comandos disponibles: /start, /help, /info, /menu"));
@@ -134,27 +134,43 @@ bot.action(/^booking_(\d+)$/, async (ctx) => {
         if (!booking) {
             return ctx.reply(messages.bookingNotFound, menu.back_menu);
         }
-        ctx.editMessageReplyMarkup(null);
+        ctx.editMessageReplyMarkup(null); // Cierra el menú
+
+        const checkIn = format(new Date(booking.check_in), "dd 'de' MMMM", { locale: es });
+        const checkOut = format(new Date(booking.check_out), "dd 'de' MMMM", { locale: es });
 
         // Formatear el mensaje con los detalles de la reserva
         let msg = `🏨 *${booking.hostel_name}*\n\n`;
-        msg += `📅 *Check-in:* ${booking.check_in}\n`;
-        msg += `📅 *Check-out:* ${booking.check_out}\n`;
+        msg += `📅 *Check-in:* ${checkIn}\n`;
+        msg += `📅 *Check-out:* ${checkOut}\n`;
         msg += `📍 *Dirección:* ${booking.address || "No disponible"}\n`;
         msg += `📞 *Teléfono:* ${booking.phone || "No disponible"}\n`;
         msg += `📧 *Email:* ${booking.email || "No disponible"}\n`;
         msg += `📝 *Notas:* ${booking.notes || "Sin notas"}\n\n`;
 
+        const buttons = [
+            [{ text: 'Volver al menú principal', callback_data: 'menu' }]
+        ];
+
         if (booking.pdf_path) {
-            const bookingPdf = `./reservas/${booking.pdf_path}`;
-            msg += `📄 *Reserva PDF:* [Descargar archivo](${bookingPdf})\n`;
+            const bookingPdf = path.join(config.reservasPath, booking.pdf_path);
+
+            // Verifica si el archivo existe antes de agregar el botón
+            try {
+                await fs.access(bookingPdf);
+                buttons.unshift([{ text: '📄 Descargar PDF', callback_data: `download_${booking.pdf_path}` }]);
+            } catch (error) {
+                console.error("El archivo PDF no existe:", error);
+            }
         }
 
-        ctx.replyWithMarkdown(msg);
-        ctx.editMessageReplyMarkup(null); // Cierra el menú
+        ctx.replyWithMarkdown(msg, {
+            reply_markup: { inline_keyboard: buttons }
+        });
+        
     } catch (error) {
         console.error("Error al obtener los detalles de la reserva:", error);
-        ctx.reply(messages.bookingDetailsError);
+        ctx.reply(messages.bookingDetailsError, menu.back_menu);
     }
 });
 
