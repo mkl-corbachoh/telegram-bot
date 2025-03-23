@@ -175,20 +175,19 @@ bot.action(/^booking_(\d+)$/, async (ctx) => {
 });
 
 // Acción para descargar un PDF
-bot.action(/^download_(.+)$/, (ctx) => {
+bot.action(/^download_(.+)$/, async (ctx) => {
     const fileName = ctx.match[1];
     const filePath = path.join(config.reservasPath, fileName);
 
-    if (!fileName.endsWith(".pdf") || !fs.existsSync(filePath)) {
-        return ctx.reply(messages.invalidFile, menu.back_menu);
-    }
-
     try {
-        ctx.replyWithDocument({ source: filePath });
-        ctx.editMessageReplyMarkup(null); // Cierra el menú
+        // Verifica si el archivo existe antes de enviarlo
+        await fs.access(filePath);
+
+        await ctx.replyWithDocument({ source: filePath, filename: fileName });
+        //ctx.editMessageReplyMarkup(null); // Cierra el menú después de la descarga
     } catch (error) {
         console.error("Error al enviar el archivo:", error);
-        ctx.reply("Hubo un error al enviar el archivo.");
+        ctx.reply("❌ Hubo un error al enviar el archivo. Es posible que no exista.");
     }
 });
 
