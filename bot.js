@@ -77,13 +77,17 @@ bot.action('weather', async (ctx) => {
             one_time_keyboard: true
         }
     });
-    // try {
-    //     const msg = await getWeather("Santiago de Compostela");
-    //     replyAndClose(ctx, msg);
-    // } catch (error) {
-    //     console.error("Error obteniendo el clima:", error);
-    //     ctx.reply(ctx, "Hubo un error al obtener el clima.");
-    // }
+});
+
+bot.action('weather_travel', async (ctx) => {
+    // ctx.editMessageReplyMarkup(null);
+    try {
+        const msg = await getWeather("Santiago de Compostela");
+        replyAndClose(ctx, msg);
+    } catch (error) {
+        console.error("Error obteniendo el clima:", error);
+        ctx.reply(ctx, "Hubo un error al obtener el clima.");
+    }
 });
 
 bot.on('location', async (ctx) => {
@@ -94,7 +98,7 @@ bot.on('location', async (ctx) => {
         const weather = await getWeatherByCoordinates(latitude, longitude);
 
         // Responde con el clima
-        ctx.reply(`🌤 El clima en tu ubicación actual es:\n\n${weather}`);
+        ctx.replyWithMarkdown(`🌤 El clima en tu ubicación actual es:\n\n${weather}`);
     } catch (error) {
         console.error('Error al obtener el clima:', error);
         ctx.reply('❌ Hubo un error al obtener el clima. Por favor, inténtalo de nuevo más tarde.');
