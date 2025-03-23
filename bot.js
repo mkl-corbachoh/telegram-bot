@@ -5,7 +5,6 @@ const fs = require("fs").promises;
 const path = require("path");
 const express = require("express");
 
-
 // Modulos propios.
 const getWeather = require("./modules/weather");        // Modulo para obtener el clima
 const { replyAndClose } = require("./utils/reply");     // Modulo para responder y cerrar el menú
