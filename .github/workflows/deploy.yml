@@ -21,7 +21,7 @@ jobs:
         key: ${{ secrets.SERVER_SSH_KEY }}
         port: ${{ secrets.SERVER_PORT }}
         script: |
-          cd /home/admin_MKL/telegram-bot   # Cambia esta ruta por la ruta de tu proyecto en el servidor
+          cd /home/admin_MKL/telegram-bot   # Ruta del proyecto en el servidor
           git pull origin main              # Cambia "main" si usas otra rama
           pm2 restart all                   # Reinicia PM2
         debug: true
