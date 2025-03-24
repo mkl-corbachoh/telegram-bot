@@ -13,7 +13,7 @@ const { getStagesTravel, getStagesRute, getStageDetails } = require("./modules/s
 const { getBookingList, getBookingDetails } = require("./modules/hostels"); // Modulo para obtener las reservas
 
 const messages = require("./utils/messages");           // Modulo para los mensajes de error/éxito
-const menu = require("./utils/menu_buttons");           // Modulo para los mensajes de error/éxito
+const menu = require("./utils/menu_buttons");           // Modulo para las botoneras de menu
 
 const authorizedUsers = new Set(); // Caché en memoria
 
@@ -98,7 +98,7 @@ bot.on('location', async (ctx) => {
         const weather = await getWeatherByCoordinates(latitude, longitude);
 
         // Responde con el clima
-        ctx.replyWithMarkdown(`🌤 El clima en tu ubicación actual es:\n\n${weather}`);
+        ctx.replyWithMarkdown(`🌤 El clima en tu ubicación actual es:\n\n${weather}`, menu.back_menu);
     } catch (error) {
         console.error('Error al obtener el clima:', error);
         ctx.reply('❌ Hubo un error al obtener el clima. Por favor, inténtalo de nuevo más tarde.');
@@ -297,7 +297,7 @@ bot.action(/^stage_(\d+)$/, async (ctx) => {
         msg += `🗺 *Ruta en Google Maps:*\n[Haz clic aquí para ver la ruta](${stage.maps_link})`;
     }
 
-    ctx.replyWithMarkdown(msg);
+    ctx.replyWithMarkdown(msg, menu.back_menu);
     ctx.editMessageReplyMarkup(null); // Cierra el menú
 });
 
