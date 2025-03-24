@@ -1,4 +1,4 @@
-const menu = require("./utils/menu_buttons");
+const menu = require("../utils/menu_buttons");
 
 module.exports = {
     replyAndClose: (ctx, message) => {
