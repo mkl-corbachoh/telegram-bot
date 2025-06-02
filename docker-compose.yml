@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  node-app:
+    image: node:24-alpine
+    restart: always
+    working_dir: /usr/src/app
+    volumes:
+      - ./src:/usr/src/app
+      # - files_data:/usr/src/app/data
+    command: npm install && npm run start
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+    ports:
+      - "${PORT}:${PORT}"
+    networks:
+      - tlbot_network
+
+  db:
+    image: mariadb:11
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${PASS_ROOT_DB}
+      MARIADB_DATABASE: ${TLBOT_DB}
+      MARIADB_USER: ${USER_DB}
+      MARIADB_PASSWORD: ${PASS_DB}
+    ports:
+      - "${PORT_DB}:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./infrastructure/mysql/init-db.sql:/docker-entrypoint-initdb.d/init-sql.sql
+    env_file:
+      - ./.env
+    networks:
+      - tlbot_network
+
+volumes:
+  db_data:
+  # files_data:
+
+networks:
+  tlbot_network:
+    driver: bridge

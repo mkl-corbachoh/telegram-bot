@@ -1,0 +1,17 @@
+-- init-db.template
+-- SQL initialization template for MySQL
+
+-- Create database if not exists
+CREATE DATABASE IF NOT EXISTS `{{DB_NAME}}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- Create user if not exists and grant privileges
+CREATE USER IF NOT EXISTS '{{DB_USER}}'@'%' IDENTIFIED BY '{{DB_PASSWORD}}';
+GRANT ALL PRIVILEGES ON `{{DB_NAME}}`.* TO '{{DB_USER}}'@'%';
+FLUSH PRIVILEGES;
+
+-- Optionally, create tables
+-- USE `{{DB_NAME}}`;
+-- CREATE TABLE example (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     name VARCHAR(255) NOT NULL
+-- );
