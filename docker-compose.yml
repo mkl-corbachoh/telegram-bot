@@ -1,14 +1,11 @@
-version: '3.8'
-
 services:
   node-app:
-    image: node:24-alpine
-    restart: always
-    working_dir: /usr/src/app
+    build: 
+      context: .
+      dockerfile: infrastructure/node/Dockerfile
+    restart: on-failure
     volumes:
-      - ./src:/usr/src/app
-      # - files_data:/usr/src/app/data
-    command: npm install && npm run start
+      # - ./src:/usr/src/app
     env_file:
       - ./.env
     depends_on:
@@ -17,6 +14,13 @@ services:
       - "${PORT}:${PORT}"
     networks:
       - tlbot_network
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tlbot.rule=Host(`tl-bot.mikorh.com`)"
+      - "traefik.http.routers.tlbot.entrypoints=websecure"
+      - "traefik.http.routers.tlbot.tls.certresolver=myresolver"
+      - "traefik.http.services.tlbot.loadbalancer.server.port=${PORT}"
 
   db:
     image: mariadb:11
@@ -35,6 +39,14 @@ services:
       - ./.env
     networks:
       - tlbot_network
+
+    healthcheck:
+      test: ["CMD", "mariadb", "-h", "localhost", "-u$USER_DB", "-p$PASS_DB","-e", "SELECT 1;"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
 
 volumes:
   db_data:
