@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: infrastructure/node/Dockerfile
     restart: on-failure
-    volumes:
+    # volumes:
       # - ./src:/usr/src/app
     env_file:
       - ./.env

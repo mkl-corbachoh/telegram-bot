@@ -1,4 +1,4 @@
 .env
 init-db.sql
 node_modules
-/src/data/reservas/*
+src/data/reservas/*
