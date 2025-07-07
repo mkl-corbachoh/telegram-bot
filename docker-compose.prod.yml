@@ -1,13 +1,9 @@
-version: '3.8'
-
 services:
   node-app:
     build: 
       context: .
       dockerfile: Dockerfile
     restart: always
-    volumes:
-      - files_data:/usr/src/app/data
     env_file:
       - ./.env
     depends_on:
@@ -16,7 +12,13 @@ services:
       - "${PORT}:${PORT}"
     networks:
       - tlbot_network
-
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.tlbot.rule=Host(`tl-bot.mikorh.com`)"
+      - "traefik.http.routers.tlbot.entrypoints=websecure"
+      - "traefik.http.routers.tlbot.tls.certresolver=letsencrypt"
+      - "traefik.http.services.tlbot.loadbalancer.server.port=${PORT}"
   db:
     image: mariadb:11
     restart: always
@@ -42,3 +44,5 @@ volumes:
 networks:
   tlbot_network:
     driver: bridge
+  traefik:
+    external: true

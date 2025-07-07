@@ -11,5 +11,12 @@ COPY /src/ .
 # Instala las dependencias
 RUN npm install
 
+# Copia el resto del código de la aplicación
+# COPY /src/ .
+
+# Expone el puerto si tu bot lo necesita (opcional)
+# EXPOSE 3000
+
 # Comando para iniciar el bot
-CMD ["npm", "start"]
+CMD ["node", "bot-dev.js"]
+# CMD ["npm", "start"]
