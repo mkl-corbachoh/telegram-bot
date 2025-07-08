@@ -19,14 +19,20 @@ const authorizedUsers = new Set(); // Caché en memoria
 
 const { Telegraf } = require('telegraf');
 const TOKEN = config.botToken;
+const URL = config.baseUrl;
 const bot = new Telegraf(TOKEN);
 // Para que no use pooling  el bot de teleggram porque consume mas recursos
-bot.telegram.setWebhook('https://mikorh.ddns.net/webhook');
+bot.telegram.setWebhook(URL+'/webhook');
 
 // Endpoint del bot
 const app = express();
 app.use(express.json());
 app.use(bot.webhookCallback('/webhook')); // Usa webhooks en vez de pooling
+
+// Healthcheck endpoint para Docker
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
 
 // Telegraf
 bot.use(async (ctx,next) => {
@@ -308,7 +314,8 @@ console.log('Bot iniciado 🚀');
 
 // Escuchamos en el puerto 3000
 const PORT = config.port || 3000;
+const HOST = config.host || 'localhost';
 app.listen(PORT, () => {
-    console.log(`Bot escuchando en http://localhost:${PORT}`);
+    console.log(`Bot escuchando en ${HOST}:${PORT}`);
 });
 

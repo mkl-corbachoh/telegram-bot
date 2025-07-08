@@ -21,6 +21,15 @@ const { Telegraf } = require('telegraf');
 const TOKEN = config.botToken;
 const bot = new Telegraf(TOKEN);
 
+// Express app para healthcheck en desarrollo
+const app = express();
+app.use(express.json());
+
+// Healthcheck endpoint para Docker/dev
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
 // --- MODO POLLING PARA DESARROLLO LOCAL ---
 bot.launch();
 
@@ -215,3 +224,10 @@ bot.action(/^stage_(\d+)$/, async (ctx) => {
 });
 
 console.log('Bot DEV iniciado 🚀');
+
+// Escuchamos en el puerto 3000 (o el definido en config)
+const PORT = config.port || 3000;
+const HOST = config.host || 'localhost';
+app.listen(PORT, () => {
+    console.log(`Bot DEV escuchando en ${HOST}:${PORT}`);
+});

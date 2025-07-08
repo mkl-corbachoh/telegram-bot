@@ -23,6 +23,13 @@ services:
       - "traefik.http.routers.tlbot.tls.certresolver=letsencrypt"
       - "traefik.http.services.tlbot.loadbalancer.server.port=${PORT}"
 
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   db:
     image: mariadb:11
     restart: always

@@ -3,6 +3,8 @@ require("dotenv").config();
 
 module.exports = {
   port: process.env.PORT,
+  host: process.env.HOST,
+  baseUrl: process.env.BASE_URL,
   botToken: process.env.TELEGRAM_TOKEN,
   weatherApiKey: process.env.WEATHER_API_KEY,
   dbConfig: {
