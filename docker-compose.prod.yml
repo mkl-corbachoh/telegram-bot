@@ -21,7 +21,7 @@ services:
       - "traefik.http.services.tlbot.loadbalancer.server.port=${PORT}"
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${PORT}/health" ]
+      test: ["CMD-SHELL", "pidof node || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
