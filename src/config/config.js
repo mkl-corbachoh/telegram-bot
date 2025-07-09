@@ -14,4 +14,7 @@ module.exports = {
     database: process.env.TLBOT_DB,
   },
   reservasPath: path.join(__dirname, "../data/reservas"),
+  resendApiKey: process.env.RESEND_API_KEY, // Añade tu clave de API de Resend en .env
+  adminEmail: process.env.ADMIN_EMAIL,      // Añade el email del admin en .env
+  fromEmail: process.env.FROM_EMAIL         // Añade el email remitente en .env
 };

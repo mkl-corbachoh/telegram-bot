@@ -8,7 +8,8 @@ const express = require("express");
 // Modulos propios.
 const {getWeather, getWeatherByCoordinates} = require("./modules/weather");        // Modulo para obtener el clima
 const { replyAndClose } = require("./utils/reply");     // Modulo para responder y cerrar el menú
-const { isUserAuthorized } = require("./utils/db");     // Modulo para verificar si el usuario está autorizado
+const { isUserAuthorized, addUser } = require("./utils/db");     // Modulo para verificar si el usuario está autorizado
+const { sendNewUserRequest } = require("./utils/email"); // Script para envío de correos
 const { getStagesTravel, getStagesRute, getStageDetails } = require("./modules/stages"); // Modulo para obtener las etapas   
 const { getBookingList, getBookingDetails } = require("./modules/hostels"); // Modulo para obtener las reservas
 
@@ -42,25 +43,53 @@ bot.use(async (ctx,next) => {
     }
 
     const userId = ctx.from.id;
-    const isAuthorized = await isUserAuthorized(userId);
 
     if (authorizedUsers.has(userId)) {
         return next(); // Si el usuario ya está en caché, no consultamos la DB
+    }
+
+    const isAuthorized = await isUserAuthorized(userId);
+
+    if (!isAuthorized && ctx.message.text === '/register') {
+        return next(); // Permitir el comando /register sin autorización previa
     }
 
     if (!isAuthorized) {
         return ctx.reply("❌ No tienes permiso para usar este bot.");
     }
 
+    // Si está autorizado, lo agregamos a la caché
+    authorizedUsers.add(userId);
     return next(); // Si está autorizado, continúa con el siguiente middleware
 });
+// Comando de inicio del bot
 bot.start((ctx) => ctx.reply('¡Bienvenido! 🤖',menu.print_menu));
 
+// Compueba identificacion del usuario
 bot.command('info', (ctx) => {
     ctx.reply(`Tu ID: ${ctx.from.id}\nNombre: ${ctx.from.first_name}`);
 });
 
-bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info, /menu'));
+// Comando para registrar al usuario
+// Este comando permite a los usuarios registrarse en el bot y ser autorizados para usarlo
+bot.command('register', async (ctx) => {
+    const userId = ctx.from.id;
+    const userName = ctx.from.username || ctx.from.first_name;
+    const isAuthorized = await isUserAuthorized(userId);
+    if (isAuthorized) {
+        return ctx.reply("✅ Ya estás registrado y autorizado para usar el bot.");
+    }
+    // Registrar usuario en la base de datos
+    const resp = await addUser(userId, userName);
+    if (!resp) {
+        return ctx.reply("el usuario ya está registrado.");
+    }
+    // Enviar correo de solicitud de autorización
+    await sendNewUserRequest(userId, userName);
+    ctx.reply("✅ Se ha mandado la solicitud de registro del usuario.");
+});
+
+bot.help((ctx) => ctx.reply('Comandos disponibles: /start, /help, /info, /menu, /register'));
 
 bot.command('menu', (ctx) => {
     ctx.reply('¿Qué te gustaría hacer?', menu.print_menu);
