@@ -7,6 +7,8 @@ module.exports = {
   baseUrl: process.env.BASE_URL,
   botToken: process.env.TELEGRAM_TOKEN,
   weatherApiKey: process.env.WEATHER_API_KEY,
+  googlePlacesApiKey: process.env.GOOGLE_PLACES_API_KEY,
+  eventbriteApiKey: process.env.EVENTBRITE_API_KEY,
   dbConfig: {
     host: process.env.HOST_DB,
     user: process.env.USER_DB,

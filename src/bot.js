@@ -4,6 +4,7 @@ const express = require("express");
 // Controladores
 const userController = require("./controller/userController");
 const menuController = require("./controller/menuController");
+const recommendationsController = require("./controller/recommendationsController");
 const weatherController = require("./controller/weatherController");
 const bookingController = require("./controller/bookingController");
 const stageController = require("./controller/stageController");
@@ -59,6 +60,10 @@ bot.command('register', userController.register);
 bot.help(userController.help);
 bot.command('menu', menuController.showMenu);
 bot.action('menu', menuController.showMenu);
+// bot.action('recommendations', recommendationsController.showRecommendationsMenu);
+// bot.action('recommend_restaurants', recommendationsController.setRecommendationType('restaurants'));
+// bot.action('recommend_events', recommendationsController.setRecommendationType('events'));
+// bot.on('location', recommendationsController.handleLocation);
 bot.action('close', menuController.closeMenu);
 bot.action('profile', menuController.showProfile);
 bot.action('help', menuController.showHelpAction);
@@ -66,7 +71,7 @@ bot.action('help', menuController.showHelpAction);
 // Clima
 bot.action('weather', weatherController.askForLocation);
 bot.action('weather_travel', weatherController.showWeatherTravel);
-bot.on('location', weatherController.showWeatherByLocation);
+bot.on('location', weatherController.showWeatherByCoordinates);
 
 // Reservas
 bot.action('booking', bookingController.showBookings);

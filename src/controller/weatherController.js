@@ -24,7 +24,18 @@ async function showWeatherTravel(ctx) {
     }
 }
 
-async function showWeatherByLocation(ctx) {
+async function showWeatherByLocation(ctx, location) {
+    const locationName = location || ctx.message.text;
+    try {
+        const weather = await getWeather(locationName);
+        ctx.replyWithMarkdown(`🌤 El clima en ${locationName} es:\n\n${weather}`, menu.back_menu);
+    } catch (error) {
+        console.error('Error al obtener el clima:', error);
+        ctx.reply('❌ Hubo un error al obtener el clima. Por favor, inténtalo de nuevo más tarde.');
+    }
+}
+
+async function showWeatherByCoordinates(ctx) {
     const { latitude, longitude } = ctx.message.location;
     try {
         const weather = await getWeatherByCoordinates(latitude, longitude);
@@ -38,5 +49,6 @@ async function showWeatherByLocation(ctx) {
 module.exports = {
     askForLocation,
     showWeatherTravel,
+    showWeatherByCoordinates,
     showWeatherByLocation
 };

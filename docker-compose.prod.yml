@@ -1,5 +1,6 @@
 services:
   node-app:
+    container_name: MKItenirary-bot
     build: 
       context: .
       dockerfile: infrastructure/node/dockerfile
@@ -28,6 +29,7 @@ services:
       start_period: 10s
 
   db:
+    container_name: MKItenirary-bot-db
     image: mariadb:11
     restart: always
     environment:
